@@ -1,0 +1,37 @@
+\section{Problem Statement}
+		The use of matrix factorization for collaborative recommendation filtering is a widely used method in which patterns in the ratings given by users of a service are analyzed to make personalized recommendations to each user.
+		However, this technique necessitates that users disclose their ratings to the recommendation service.
+		Unfortunately, it has been shown that this disclosure can result in the leakage of personal information, such as demographic characteristics like gender and age. This is a serious concern as it can potentially lead to violation of user privacy and open them up to the potential malicious use of their personal information.
+		To overcome this problem we need to first define the matrix factorization technique and see the privacy settings related to it. As it will help us to understand the technique deeply and how can we modify it to overcome the privacy concerns.
+		
+		\subsection{Matrix Factorization}
+		The methodology employed by recommendation systems is known as collaborative filtering, in which a system utilizing a set of $n$ users and $m$ items seeks to predict the ratings for user-item pairs not present in a specified subset, denoted as $\mathcal{M} \subseteq [n]\times[m]$, which encompasses all user-generated ratings. As both $n$ and $m$ are typically large in practice, the total number of potential ratings, or $n.m$, is quite substantial. However, as users typically rate only a small fraction of items, in practice the total number of ratings, $M = |\mathcal{M}|$, is of the order $n+m$.
+		
+		Matrix factorization is utilized to achieve this goal, where a bi-linear model is fitted to the existing ratings. The assumption underlying this approach is that there exists a user profile, $u_i \in R^d$, and an item profile, $v_j \in R^d$, such that $r_{ij} = <u_i,v_j> + \epsilon_{ij}$, where $<u_i,v_j>$ denotes the inner product of $u_i$ and $v_j$, and $\epsilon_{ij}$ is i.i.d gaussian random variable. The matrices $U=[u_i^T]_{i\in [n]} \in R^{n\times k}$ and $V=[v_j^T]_{j\in [m]} \in R^{k \times m}$ are computed, where $U$'s $i^{th}$ row denotes the profile of the $i^{th}$ user, and $V$'s $j^{th}$ row denotes the profile of the $j^th$ item. Therefore, the objective of the recommendation system is to compute the matrices $U$ and $V$, such that when multiplied together, they approximate the hypothetical matrix $\mathcal{A}$, which would have been generated if all users had given ratings to all items.\\
+		Given a set of ratings ${r_{ij} : i,j \in \mathcal{M}}$, the  recommendation system computes the user profiles represented by a matrix $U$ and the item profiles represented by matrix $V$ by solving the following regularized least squares minimization problem:
+		
+		$$\mathcal||{A}-U.V||^2_F + R(U) +R(V)$$
+		
+		where $R(X) = \sum_{x\in X}\{r(x),r(x-1)\}$ and $r(x) = \kappa ||x||_1 + \lambda ||x||^2_2$ is known as elastic-net regularizer.  and ${||.||^2_F}$ denotes the Frobenius norm. As this is a non-convex problem, it cannot be solved straightforwardly. A common approach is to fix one of the matrices, say $U$, and generate a sequence of sub-problems until convergence.
+		
+		$$U_{t+1} \leftarrow \arg \min_U {||\mathcal{A}-UV_t||^2_F + R(U)}$$
+		$$V_{t+1} \leftarrow \arg \min_V {||\mathcal{A}-U_{t+1}V||^2_F + R(V)}$$
+		
+		The sub-problem is of the form $f(X) + R(X)$, where $f$ is the loss function ${||.||^2_F}$, and $R(X)$ is the regularizer. The solution to this sub-problem can be computed using a proximal gradient descent approach.~\cite{bolte2014proximal}~\cite{pock2016inertial}.
+		\subsection{Privacy Setting}
+		The privacy-preserving matrix factorization protocol for recommendation systems involves the users, the recommendation system, and the crypto-service provider. Each user, denoted by $i \in [n]$, desires to keep their ratings private. The recommendation system performs the matrix factorization in a privacy-preserving manner, while the crypto-service provider facilitates private computation. See Figure 2.
+		
+	%	\lipsum[1]
+	\makebox[0pt][l]{%
+		\begin{minipage}{\textwidth}
+			\includegraphics[width=.4\textwidth]{privacysetting.jpg}
+			%\caption{Figure 2}
+			\label{fig:privacysetting}
+			
+		\end{minipage}
+	}
+		
+		
+		
+		$$Figure\; 2: Three \; mutually \; distrusting\; parties\\$$
+		The main objective is to design a protocol in which the recommendation system only learns the item profiles, represented by matrix $V$, without obtaining any information about the user's ratings. This is because embedding items in $R^d$ through matrix factorization allows the recommender to infer similarity: items whose profiles have a small Euclidean distance are rated similarly by users. Additionally, having obtained the item profiles, the recommendation system can provide relevant recommendations to a user without requiring any additional data revelation by the user. The user can infer her private profile, $u_i$ by solving the regularized least squares minimization problem explained before with respect to $u_i$ through ridge regression and subsequently predict all ratings by computing $r_{ij} = <u_i,v_j> + \epsilon_{ij}$, using the inferred profile $u_i$ and the shared item profiles $V$. We operate under the assumption of an honest but curious adversary, where all parties involved in the protocol are assumed to follow the prescribed procedures accurately but may seek to gain additional information beyond what they are explicitly authorized to access. This type of threat model is common in settings where the risk of active malicious behavior is considered low, but there is still a need to protect against passive information leakage.
