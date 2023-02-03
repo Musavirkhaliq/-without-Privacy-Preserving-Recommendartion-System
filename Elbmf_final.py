@@ -1,4 +1,5 @@
 import numpy as np
+import time
 def integrality_gap_elastic(e, kappa, lambda_):
     return min(kappa * abs(e) + lambda_ * e**2, kappa * abs(e - 1) + lambda_ * (e - 1)**2)
 
@@ -212,6 +213,7 @@ callback=None):
 
 
 def main():
+    start_time = time.time()
     A = np.random.randint(2,size=(50, 60)).astype("float")
     k=10
     l1=0.01
@@ -226,5 +228,7 @@ def main():
     print("U.V = \n",U@V)
     print("A = \n",A)
     print("norm = \n",np.linalg.norm(A-U@V))
+    end_time = time.time()
+    print("Time taken: ", end_time - start_time, "seconds")
 
 main()
